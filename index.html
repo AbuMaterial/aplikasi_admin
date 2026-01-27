@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADMIN - ABU MATERIAL</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<script>
+  // Registrasi Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('SW Registered!', reg))
+        .catch(err => console.log('SW Registration Failed!', err));
+    });
+  }
+</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        .admin-bg { background-color: #f0f2f5; }
+        .sidebar-active { border-bottom: 3px solid #075E54; color: #075E54; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #075E54; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Custom Suggestion Box */
+        .suggest-box { position: absolute; z-index: 2000; background: white; width: 100%; max-height: 200px; overflow-y: auto; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #e5e7eb; display: none; }
+        .suggest-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #f3f4f6; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .suggest-item:hover { background-color: #f0fdf4; color: #166534; }
+    </style>
+</head>
+<body class="admin-bg font-sans">
+
+    <div id="screen-login" class="min-h-screen flex items-center justify-center p-6">
+        <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md">
+            <h2 class="text-2xl font-black uppercase mb-6 text-green-800 tracking-tighter">AbuMaterial<br><span class="text-gray-400 text-xs">ADMIN PANEL</span></h2>
+            <div class="space-y-4">
+                <input type="text" id="admin-user" placeholder="Username" class="w-full p-4 bg-gray-50 rounded-2xl border outline-none focus:border-green-600 font-bold">
+                <input type="password" id="admin-pass" placeholder="Password" class="w-full p-4 bg-gray-50 rounded-2xl border outline-none focus:border-green-600 font-bold">
+                <button onclick="prosesLogin()" id="btn-login" class="w-full bg-green-800 text-white py-4 rounded-2xl font-black uppercase shadow-lg">Masuk</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-main" class="hidden">
+        <nav class="bg-white shadow-md sticky top-0 z-50">
+            <div class="p-4 flex justify-between items-center max-w-4xl mx-auto">
+                <div>
+                    <h1 class="font-black text-lg text-green-800 uppercase leading-none">AbuMaterial</h1>
+                    <p id="user-info" class="text-[10px] text-gray-500 font-bold uppercase mt-1">Memuat User...</p>
+                </div>
+                <button onclick="logout()" class="text-red-500 bg-red-50 px-3 py-2 rounded-xl text-[10px] font-bold uppercase">Keluar</button>
+            </div>
+            <div class="flex justify-center gap-6 border-t px-4">
+                <button onclick="switchTab('pesanan')" id="btn-pesanan" class="px-2 py-3 font-bold text-[10px] uppercase sidebar-active">Pesanan</button>
+                <button onclick="switchTab('katalog')" id="btn-katalog" class="px-2 py-3 font-bold text-[10px] uppercase text-gray-400">Katalog</button>
+            </div>
+        </nav>
+
+        <div id="section-pesanan" class="p-4 max-w-4xl mx-auto pb-24">
+            <div id="container-order" class="space-y-4"></div>
+        </div>
+
+        <div id="section-katalog" class="hidden p-4 max-w-4xl mx-auto pb-24">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-[10px] font-black uppercase text-gray-400">Manajemen Produk</h2>
+                <button onclick="bukaModalProduk()" class="bg-blue-600 text-white px-3 py-2 rounded-xl text-[10px] font-bold uppercase">+ Produk</button>
+            </div>
+            <div id="grid-katalog-admin" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+
+        <button onclick="bukaModalBaru()" class="fixed bottom-6 right-6 bg-green-800 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl z-40">
+            <i class="fa fa-plus"></i>
+        </button>
+    </div>
+
+    <div id="modal-order" class="modal p-4">
+        <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 bg-gray-50 border-b relative">
+                <h3 class="font-black text-green-800 uppercase text-xs mb-2" id="modal-title">PESANAN</h3>
+                <div class="relative">
+                    <input type="text" id="input-nama-toko" oninput="showSuggest(this, 'pelanggan')" placeholder="CARI NAMA PELANGGAN..." autocomplete="off" class="w-full text-xs font-black uppercase border-b-2 border-green-200 bg-transparent outline-none focus:border-green-800 pb-2">
+                    <div id="suggest-pelanggan" class="suggest-box"></div>
+                </div>
+            </div>
+            <div id="modal-items-container" class="p-6 overflow-y-auto space-y-4 bg-white flex-1"></div>
+            <div class="p-6 bg-gray-50 border-t">
+                <div class="relative mb-4">
+                    <div class="flex gap-2">
+                        <input type="text" id="input-cari-item" oninput="showSuggest(this, 'produk_top')" placeholder="KETIK NAMA BARANG..." autocomplete="off" class="flex-1 p-3 rounded-xl border-2 border-blue-100 outline-none text-[10px] font-bold uppercase focus:border-blue-400">
+                        <button onclick="tambahItemModal()" class="bg-blue-600 text-white px-5 rounded-xl"><i class="fa fa-plus"></i></button>
+                    </div>
+                    <div id="suggest-produk_top" class="suggest-box" style="bottom: 100%; margin-bottom: 5px;"></div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="tutupModal()" class="flex-1 py-4 bg-white border rounded-2xl font-bold text-xs uppercase text-gray-400">Batal</button>
+                    <button onclick="simpanOrder()" id="btn-simpan" class="flex-1 py-4 bg-green-700 text-white rounded-2xl font-black text-xs uppercase shadow-lg">Simpan Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-produk" class="modal p-4">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8">
+            <h3 class="font-black text-green-800 uppercase mb-6" id="produk-modal-title">KELOLA PRODUK</h3>
+            <div class="space-y-4">
+                <input type="hidden" id="produk-id-lama">
+                <div>
+                    <label class="text-[8px] font-bold text-gray-400 uppercase">Nama Produk</label>
+                    <input type="text" id="p-nama" class="w-full p-3 bg-gray-50 rounded-xl border outline-none font-bold text-xs uppercase">
+                </div>
+                <div>
+                    <label class="text-[8px] font-bold text-gray-400 uppercase">Harga (Rp)</label>
+                    <input type="number" id="p-harga" class="w-full p-3 bg-gray-50 rounded-xl border outline-none font-bold text-xs">
+                </div>
+                <div>
+                    <label class="text-[8px] font-bold text-gray-400 uppercase">URL Gambar</label>
+                    <input type="text" id="p-img" class="w-full p-3 bg-gray-50 rounded-xl border outline-none font-bold text-xs">
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button onclick="tutupModalProduk()" class="flex-1 py-4 bg-gray-100 rounded-2xl font-bold text-xs uppercase">Batal</button>
+                    <button onclick="simpanProduk()" id="btn-simpan-produk" class="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const scriptURL = "https://script.google.com/macros/s/AKfycby_5wpUR444IYzeo-hKkbaZ5YjX53V_UE_Vxfe0o8XhlEJnuKLlIec7lVDYa7E_iKUI7w/exec";
+        let allOrders = [], allProducts = [], allCustomers = [], currentOrderId = null;
+        let selectedCustomerHP = ""; 
+
+        window.onload = () => {
+            const session = localStorage.getItem('abu_admin_session');
+            if(session) showMainScreen(JSON.parse(session));
+        };
+
+        async function prosesLogin() {
+            const user = document.getElementById('admin-user').value;
+            const pass = document.getElementById('admin-pass').value;
+            const btn = document.getElementById('btn-login');
+            btn.innerHTML = '<div class="loader mx-auto"></div>';
+            try {
+                const res = await fetch(`${scriptURL}?action=loginAdmin&user=${user}&pass=${pass}`);
+                const data = await res.json();
+                if(data.success) {
+                    localStorage.setItem('abu_admin_session', JSON.stringify(data.user));
+                    showMainScreen(data.user);
+                } else { alert(data.message); btn.innerText = "Masuk"; }
+            } catch (e) { alert("Error!"); btn.innerText = "Masuk"; }
+        }
+
+        function showMainScreen(user) {
+            document.getElementById('screen-login').classList.add('hidden');
+            document.getElementById('screen-main').classList.remove('hidden');
+            document.getElementById('user-info').innerText = `${user.nama_lengkap} | ${user.role}`;
+            muatSemuaData();
+        }
+
+        async function muatSemuaData() {
+            try {
+                const res = await fetch(`${scriptURL}?action=getInitialData`);
+                const data = await res.json();
+                allProducts = data.produk || [];
+                allCustomers = data.pelanggan || [];
+                muatPesanan();
+                renderKatalog();
+            } catch (e) { console.error("Gagal muat data"); }
+        }
+
+        function showSuggest(el, type) {
+            const val = el.value.toUpperCase();
+            const box = document.getElementById(`suggest-${type}`);
+            if (val.length < 1) { box.style.display = 'none'; return; }
+
+            let matches = [];
+            if (type === 'pelanggan') {
+                matches = allCustomers.filter(c => c[1].toUpperCase().includes(val));
+                box.innerHTML = matches.map(m => `
+                    <div class="suggest-item" onclick="pilihSuggest('${m[1]}', 'pelanggan', '${m[4]}')">
+                        ${m[1]} <span class="float-right text-gray-400 font-normal">${m[4]}</span>
+                    </div>
+                `).join('');
+            } else {
+                matches = allProducts.filter(p => p[1].toUpperCase().includes(val));
+                box.innerHTML = matches.map(m => `
+                    <div class="suggest-item" onclick="pilihSuggest('${m[1]}', 'produk', '${m[7]}')">
+                        ${m[1]} <span class="float-right text-green-600">Rp ${Number(m[7]).toLocaleString()}</span>
+                    </div>
+                `).join('');
+            }
+            if (matches.length > 0) box.style.display = 'block';
+            else box.style.display = 'none';
+        }
+
+        function pilihSuggest(nama, type, ekstra) {
+            if (type === 'pelanggan') {
+                document.getElementById('input-nama-toko').value = nama;
+                selectedCustomerHP = ekstra;
+            } else {
+                document.getElementById('input-cari-item').value = nama;
+            }
+            document.querySelectorAll('.suggest-box').forEach(b => b.style.display = 'none');
+        }
+
+        function bukaModalProduk(id = null) {
+            document.getElementById('produk-modal-title').innerText = id ? "EDIT PRODUK" : "TAMBAH PRODUK BARU";
+            const p = allProducts.find(x => x[0].toString() === id?.toString());
+            document.getElementById('produk-id-lama').value = id || "";
+            document.getElementById('p-nama').value = p ? p[1] : "";
+            document.getElementById('p-harga').value = p ? p[7] : "";
+            document.getElementById('p-img').value = p ? p[4] : "";
+            document.getElementById('modal-produk').classList.add('active');
+        }
+
+        function tutupModalProduk() { document.getElementById('modal-produk').classList.remove('active'); }
+
+        async function simpanProduk() {
+            const payload = {
+                fungsi: "saveProduk",
+                id: document.getElementById('produk-id-lama').value,
+                nama: document.getElementById('p-nama').value,
+                harga: document.getElementById('p-harga').value,
+                img: document.getElementById('p-img').value
+            };
+            if(!payload.nama || !payload.harga) return alert("Wajib isi Nama & Harga!");
+            const btn = document.getElementById('btn-simpan-produk');
+            btn.innerHTML = '<div class="loader mx-auto"></div>';
+            try {
+                const res = await fetch(scriptURL, { method: 'POST', body: JSON.stringify(payload) });
+                await res.json();
+                alert("Berhasil!"); tutupModalProduk(); muatSemuaData();
+            } catch (e) { alert("Gagal!"); }
+            btn.innerText = "Simpan";
+        }
+
+        function muatPesanan() {
+            const container = document.getElementById('container-order');
+            container.innerHTML = '<div class="loader mx-auto mt-10"></div>';
+            fetch(`${scriptURL}?action=getAllOrders&t=${new Date().getTime()}`)
+                .then(res => res.json())
+                .then(data => {
+                    allOrders = data;
+                    container.innerHTML = allOrders.map(ord => `
+                        <div class="bg-white p-5 rounded-[2rem] shadow-sm border flex justify-between items-center">
+                            <div>
+                                <p class="text-[8px] font-black text-green-700 uppercase mb-1">${ord.status} | ${ord.tanggal}</p>
+                                <h4 class="font-black text-gray-800 uppercase text-xs">${ord.nama_toko}</h4>
+                            </div>
+                            <button onclick="bukaEditOrder('${ord.id}')" class="bg-green-700 text-white w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg"><i class="fa fa-pencil-alt text-xs"></i></button>
+                        </div>
+                    `).join('');
+                });
+        }
+
+        function bukaModalBaru() {
+            currentOrderId = null;
+            selectedCustomerHP = ""; 
+            document.getElementById('modal-title').innerText = "BUAT PESANAN BARU";
+            document.getElementById('input-nama-toko').value = "";
+            document.getElementById('modal-items-container').innerHTML = "";
+            document.getElementById('modal-order').classList.add('active');
+        }
+
+        function bukaEditOrder(id) {
+            currentOrderId = id;
+            const ord = allOrders.find(o => o.id === id);
+            selectedCustomerHP = ord.hp_toko;
+            document.getElementById('modal-title').innerText = "EDIT PESANAN";
+            document.getElementById('input-nama-toko').value = ord.nama_toko;
+            document.getElementById('modal-items-container').innerHTML = ord.items.map(i => barisItemHTML(i.nama, i.qty, i.harga)).join('');
+            document.getElementById('modal-order').classList.add('active');
+        }
+
+        function barisItemHTML(nama = "", qty = 1, harga = 0) {
+            return `
+                <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100 baris-item space-y-3">
+                    <input type="text" value="${nama}" placeholder="NAMA PRODUK" class="item-nama w-full bg-transparent font-black text-[11px] uppercase outline-none text-gray-700 border-b border-gray-200 pb-1">
+                    <div class="flex gap-3">
+                        <div class="w-20"><label class="text-[8px] font-bold text-gray-400 block uppercase">Qty</label>
+                        <input type="number" value="${qty}" class="item-qty w-full p-2 bg-white border rounded-xl text-xs font-black outline-none"></div>
+                        <div class="flex-1"><label class="text-[8px] font-bold text-gray-400 block uppercase">Harga</label>
+                        <input type="number" value="${harga}" class="item-harga w-full p-2 bg-white border rounded-xl text-xs font-black text-green-700 outline-none"></div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="mt-5 text-red-400 px-2"><i class="fa fa-trash-alt"></i></button>
+                    </div>
+                </div>`;
+        }
+
+        function tambahItemModal() {
+            const input = document.getElementById('input-cari-item');
+            if(!input.value) return;
+            const p = allProducts.find(x => x[1].toUpperCase() === input.value.toUpperCase());
+            document.getElementById('modal-items-container').insertAdjacentHTML('beforeend', barisItemHTML(input.value, 1, p ? p[7] : 0));
+            input.value = "";
+        }
+
+        async function simpanOrder() {
+            const btn = document.getElementById('btn-simpan');
+            const items = [];
+            document.querySelectorAll('.baris-item').forEach(el => {
+                const n = el.querySelector('.item-nama').value;
+                const q = el.querySelector('.item-qty').value;
+                const h = el.querySelector('.item-harga').value;
+                if(n) items.push({ nama: n, qty: q, harga: h });
+            });
+
+            if(!selectedCustomerHP) return alert("Pilih pelanggan dari daftar yang muncul!");
+
+            btn.innerHTML = '<div class="loader mx-auto"></div>';
+            try {
+                const payload = { 
+                    fungsi: currentOrderId ? "updateOrderAdmin" : "submitOrderBaru", 
+                    orderId: currentOrderId, 
+                    namaToko: document.getElementById('input-nama-toko').value, 
+                    hpToko: selectedCustomerHP,
+                    items: items 
+                };
+                await fetch(scriptURL, { method: 'POST', body: JSON.stringify(payload) });
+                tutupModal(); muatPesanan();
+            } catch (e) { alert("Error!"); }
+            btn.innerText = "Simpan Order";
+        }
+
+        function renderKatalog() {
+            document.getElementById('grid-katalog-admin').innerHTML = allProducts.map(p => `
+                <div class="bg-white p-4 rounded-3xl shadow-sm border flex items-center gap-4">
+                    <img src="${p[4] || ''}" class="w-10 h-10 object-cover rounded-xl bg-gray-50" onerror="this.src='https://via.placeholder.com/50'">
+                    <div class="flex-1">
+                        <h4 class="font-black text-[9px] uppercase">${p[1]}</h4>
+                        <p class="text-green-700 font-black text-[10px]">Rp ${Number(p[7]).toLocaleString()}</p>
+                    </div>
+                    <button onclick="bukaModalProduk('${p[0]}')" class="text-blue-500 p-2"><i class="fa fa-edit"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function logout() { localStorage.removeItem('abu_admin_session'); location.reload(); }
+        function tutupModal() { document.getElementById('modal-order').classList.remove('active'); }
+        function switchTab(tab) {
+            document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.add('hidden'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('sidebar-active', 'text-gray-400'));
+            document.getElementById('section-' + tab).classList.remove('hidden');
+            document.getElementById('btn-' + tab).classList.add('sidebar-active');
+        }
+    </script>
+</body>
+</html>

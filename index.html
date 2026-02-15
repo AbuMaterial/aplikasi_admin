@@ -215,14 +215,95 @@
             </div>
 
             <div id="section-katalog" class="hidden">
-                <div class="bg-white p-12 rounded-xl shadow-md border text-center">
-                    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-tools text-3xl text-gray-400"></i>
-                    </div>
-                    <h4 class="text-xl font-bold text-gray-700">Fitur Katalog Produk</h4>
-                    <p class="text-gray-500 mt-2 max-w-md mx-auto italic font-medium">Sedang mensinkronkan database harga terbaru dari pusat material...</p>
+    <div class="bg-white rounded-xl shadow-md border p-6">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h3 class="text-2xl font-black text-gray-800 uppercase tracking-tight">Katalog Produk</h3>
+                <p class="text-sm text-gray-500">Klik baris untuk edit. Produk terbaru ditandai warna <span class="text-red-500 font-bold">Merah</span>.</p>
+            </div>
+            <button onclick="bukaModalProduk()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-bold shadow-md transition flex items-center">
+                <i class="fas fa-plus mr-2"></i> TAMBAH PRODUK BARU
+            </button>
+        </div>
+
+        <div class="overflow-x-auto border rounded-lg">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-100 border-b-2 border-gray-200">
+                        <th class="p-3 text-xs font-black uppercase text-gray-600">Nama Produk</th>
+                        <th class="p-3 text-xs font-black uppercase text-gray-600 text-center">Satuan</th>
+                        <th class="p-3 text-xs font-black uppercase text-gray-600 text-right">Harga Jual</th>
+                        <th class="p-3 text-xs font-black uppercase text-gray-600 text-center w-24">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelKatalogBody" class="text-sm">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="modalProduk" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b flex justify-between items-center bg-gray-50">
+            <h3 id="modalProdukTitle" class="text-xl font-black text-gray-800 uppercase">Detail Produk</h3>
+            <button onclick="tutupModalProduk()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <form id="formProduk" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="hidden" id="prod-id">
+            
+            <div class="md:col-span-2">
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Nama Produk</label>
+                <input type="text" id="prod-nama" required class="w-full p-2 border-2 border-gray-100 rounded-lg focus:border-blue-500 outline-none font-bold uppercase">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Supplier</label>
+                <input list="list-supplier" id="prod-supplier" class="w-full p-2 border-2 border-gray-100 rounded-lg focus:border-blue-500 outline-none font-bold">
+                <datalist id="list-supplier"></datalist>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Satuan</label>
+                <input type="text" id="prod-satuan" placeholder="Pcs/Kg/Sakti" class="w-full p-2 border-2 border-gray-100 rounded-lg focus:border-blue-500 outline-none font-bold">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Harga Modal (Rp)</label>
+                <input type="number" id="prod-modal" oninput="hitungSaranHarga(this.value)" class="w-full p-2 border-2 border-gray-100 rounded-lg focus:border-blue-500 outline-none font-bold text-blue-600">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Harga Jual (Saran +15%)</label>
+                <input type="number" id="prod-jual" class="w-full p-2 border-2 border-orange-100 rounded-lg focus:border-orange-500 outline-none font-bold text-orange-600">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Metode Bayar</label>
+                <select id="prod-metode" class="w-full p-2 border-2 border-gray-100 rounded-lg outline-none font-bold">
+                    <option value="CASH">CASH</option>
+                    <option value="TEMPO">TEMPO</option>
+                </select>
+            </div>
+
+            
+            <div class="md:col-span-2">
+                <label class="block text-[10px] font-black text-gray-400 uppercase mb-1">Link Gambar Produk</label>
+                <input type="text" id="prod-gambar" class="w-full p-2 border-2 border-gray-100 rounded-lg outline-none text-xs">
+            </div>
+
+            <div class="md:col-span-2 flex justify-between items-center mt-6 pt-6 border-t gap-4">
+                <button type="button" id="btnVarian" onclick="duplikatVarian()" class="hidden bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-bold text-xs transition">
+                    <i class="fas fa-copy mr-2"></i> TAMBAH VARIAN
+                </button>
+                <div class="flex gap-2 ml-auto">
+                    <button type="button" onclick="tutupModalProduk()" class="px-6 py-2 text-gray-400 font-bold uppercase text-xs">Batal</button>
+                    <button type="submit" class="bg-blue-600 text-white px-8 py-2 rounded-xl font-black shadow-lg hover:bg-blue-700 transition uppercase text-xs">Simpan Produk</button>
                 </div>
             </div>
+        </form>
+    </div>
+</div>
         </section>
     </main>
 
@@ -584,6 +665,10 @@ function showSection(section) {
     } else if (section === 'supplier') {
         loadSupplierPO();
     }
+// Di dalam function showSection(section)
+if (section === 'katalog') {
+    loadKatalog();
+}
 
     const titles = {
         'dashboard': 'Dashboard Overview',
@@ -721,6 +806,198 @@ async function tandaiSelesaiPros() {
     }
 }
 
+let currentKatalog = [];
+let lastSavedId = "";
+
+// Ambil data katalog dari server
+async function loadKatalog() {
+    try {
+        const resp = await fetch(`${WEB_APP_URL}?action=getKatalog`);
+        const data = await resp.json();
+        
+        // --- PROSES SORTIR DI APLIKASI SAJA ---
+        currentKatalog = data.produk.sort((a, b) => {
+            // Kita sortir berdasarkan Nama Produk (index ke-1)
+            const namaA = a[1].toUpperCase();
+            const namaB = b[1].toUpperCase();
+            if (namaA < namaB) return -1;
+            if (namaA > namaB) return 1;
+            return 0;
+        });
+
+        renderKatalogTable();
+        updateSupplierDatalist();
+    } catch (e) {
+        console.error("Gagal load katalog", e);
+    }
+}
+
+// Render data ke tabel
+function renderKatalogTable() {
+    const tbody = document.getElementById('tabelKatalogBody');
+    tbody.innerHTML = "";
+    
+    currentKatalog.forEach((p, index) => {
+        // CEK VALIDASI: Jika nama produk (p[1]) kosong, lewati baris ini
+        if (!p[1]) return; 
+
+        const isLastSaved = (p[0] === lastSavedId);
+        const tr = document.createElement('tr');
+        // Baris merah jika produk terakhir diinput/update
+        tr.className = `border-b cursor-pointer hover:bg-blue-50 transition ${isLastSaved ? 'bg-red-50 text-red-700 font-bold' : ''}`;
+        
+        // Klik baris untuk edit
+        tr.onclick = (e) => {
+            if(!e.target.closest('button')) bukaModalProduk(p);
+        };
+
+        tr.innerHTML = `
+            <td class="p-3 uppercase font-medium">${p[1]}</td>
+            <td class="p-3 text-center text-gray-500">${p[3] || '-'}</td>
+            <td class="p-3 text-right font-mono font-bold">Rp ${Number(p[7]).toLocaleString()}</td>
+            <td class="p-3 text-center">
+                <button onclick="hapusProdukSatu('${p[0]}', '${p[1]}')" class="text-red-400 hover:text-red-600 p-2">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Fungsi Modal
+function bukaModalProduk(data = null) {
+    const form = document.getElementById('formProduk');
+    form.reset();
+    document.getElementById('modalProduk').classList.remove('hidden');
+    document.getElementById('btnVarian').classList.add('hidden');
+
+    if (data) {
+        // Mode Edit
+        document.getElementById('modalProdukTitle').innerText = "Edit Produk";
+        document.getElementById('prod-id').value = data[0] || "";
+        document.getElementById('prod-nama').value = data[1] || "";
+        document.getElementById('prod-supplier').value = data[2] || "";
+        document.getElementById('prod-satuan').value = data[3] || "";
+        document.getElementById('prod-gambar').value = data[4] || "";
+        document.getElementById('prod-modal').value = data[5] || 0;
+        document.getElementById('prod-metode').value = data[6] || "CASH";
+        document.getElementById('prod-jual').value = data[7] || 0;
+        
+        // BARIS prod-insentif SUDAH DIHAPUS AGAR TIDAK ERROR
+        
+        // Sekarang baris ini akan terbaca dan tombol akan muncul
+        document.getElementById('btnVarian').classList.remove('hidden');
+    } else {
+        // Mode Tambah Baru
+        document.getElementById('modalProdukTitle').innerText = "Tambah Produk Baru";
+        document.getElementById('prod-id').value = "";
+    }
+}
+
+function tutupModalProduk() {
+    document.getElementById('modalProduk').classList.add('hidden');
+}
+
+// Logika Opsi A: Duplikat Varian
+function duplikatVarian() {
+    document.getElementById('prod-id').value = ""; // Kosongkan ID agar dianggap produk baru
+    document.getElementById('modalProdukTitle').innerText = "Tambah Varian Baru";
+    document.getElementById('btnVarian').classList.add('hidden');
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'info',
+        title: 'Mode Varian Aktif. ID akan dibuat baru otomatis.',
+        showConfirmButton: false,
+        timer: 3000
+    });
+}
+
+// Saran Harga Jual +15%
+function hitungSaranHarga(val) {
+    const modal = Number(val);
+    if (modal > 0) {
+        const saran = modal + (modal * 0.15);
+        // Pembulatan ke ratusan terdekat agar cantik
+        document.getElementById('prod-jual').value = Math.ceil(saran / 100) * 100;
+    }
+}
+
+// Update daftar supplier di datalist
+function updateSupplierDatalist() {
+    const list = document.getElementById('list-supplier');
+    const suppliers = [...new Set(currentKatalog.map(p => p[2]))]; // Ambil unik
+    list.innerHTML = suppliers.map(s => `<option value="${s}">`).join('');
+}
+
+// Submit Form
+// CARI DAN GANTI BAGIAN INI:
+document.getElementById('formProduk').onsubmit = async (e) => {
+    e.preventDefault();
+    const payload = {
+        id_produk: document.getElementById('prod-id').value,
+        nama_produk: document.getElementById('prod-nama').value,
+        supplier: document.getElementById('prod-supplier').value,
+        satuan: document.getElementById('prod-satuan').value,
+        link_gambar: document.getElementById('prod-gambar').value,
+        harga_modal: Number(document.getElementById('prod-modal').value),
+        metode_bayar: document.getElementById('prod-metode').value,
+        harga_jual: Number(document.getElementById('prod-jual').value)
+    };
+
+    document.getElementById('loading').classList.remove('hidden');
+    try {
+        const resp = await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ fungsi: "simpanProduk", data: payload })
+        });
+        
+        const result = await resp.json();
+        
+        // --- LOGIKA PENGECEKAN YANG LEBIH FLEKSIBEL ---
+        // Kita cek di result langsung ATAU di dalam result.data
+        const isSuccess = result.success || (result.data && result.data.success);
+        const finalId = result.id || (result.data ? result.data.id : null);
+
+        if (isSuccess) {
+            lastSavedId = finalId; 
+            await Swal.fire('Berhasil!', 'Database Produk Diperbarui.', 'success');
+            tutupModalProduk();
+            loadKatalog(); 
+        } else {
+            console.error("Respon Server Gagal:", result);
+            throw new Error("Gagal diproses di Spreadsheet");
+        }
+    } catch (err) {
+        console.error("Error Detail:", err);
+        Swal.fire('Error', 'Detail: ' + err.message, 'error');
+    }
+    document.getElementById('loading').classList.add('hidden');
+};
+
+// Hapus Produk
+async function hapusProdukSatu(id, nama) {
+    const confirm = await Swal.fire({
+        title: 'Hapus Produk?',
+        text: `${nama} akan dihapus permanen!`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'YA, HAPUS'
+    });
+
+    if (confirm.isConfirmed) {
+        document.getElementById('loading').classList.remove('hidden');
+        await fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ fungsi: "hapusProduk", id: id })
+        });
+        Swal.fire('Terhapus!', '', 'success');
+        loadKatalog();
+        document.getElementById('loading').classList.add('hidden');
+    }
+}
 
     </script>
 </body>
